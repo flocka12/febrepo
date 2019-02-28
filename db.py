@@ -1,31 +1,66 @@
-#!/usr/bin/python
 import psycopg2
-from instance.config import config
-def connect():
-    """ Connect to the PostgreSQL database server """
-    conn = None
+
+from flask import current_app
+
+def establish_connection():
+    """Establish a database connection"""
+    database_url = current_app.config['DATABASE_URL']
     try:
-        # read connection parameters
-        params = config()
-        # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
-        # create a cursor
-        cur = conn.cursor() 
-        # execute a statement
-        print('PostgreSQL database version:')
-        cur.execute('SELECT version()')
-        # display the PostgreSQL database server version
-        db_version = cur.fetchone()
-        print(db_version)
-        # close the communication with the PostgreSQL
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
-            print('Database connection closed.')
-if __name__ == '__main__':
-    connect()
-    
+        connection = psycopg2.connect(database_url)
+    except psycopg2.DatabaseError as error:
+        print("error {}".format(error))
+    return connection   
+def create_table_queries():
+    "SQL Queries to create tables"
+    users = """ CREATE TABLE IF NOT EXIST users(
+        ID SERIAL PRIMARY KEY,
+        firstname VARCHAR(50) NOT NULL,
+        lastname VARCHAR(50) NOT NULL,
+        othername VARCHAR(50) NOT NULL,
+        email VARCHAR(254) UNIQUE NOT NULL,
+        phone_number VARCHAR(12) NOT NULL,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        registered TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+        password VARCHAR(100) NOT NULL
+        )"""
+    redflags = """ CREATE TABLE IF NOT EXIST redflags(
+        ID SERIAL PRIMARY KEY,
+        created_by INT NOT NULL,
+        created_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        TYPE VARCHAR(50) NOT NULL,
+        comment VARCHAR(300) NOT NULL,
+        location VARCHAR(50) NOT NULL,
+        images VARCHAR [] DEFAULT '{}',
+        videos VARCHAR [] DEFAULT '{}',
+        status VARCHAR [] DEFAULT '{}',
+        FOREIGN KEY (question_id) REFERENCES redflags (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        )"""
+    queries = [users, redflags]
+    return queries
+
+def drop_table_queries():
+    """SQL queries to drop tables"""
+    drop_queries = [
+        "DROP TABLE IF EXISTS users CASCADE",
+        "DROP TABLE IF EXISTS redflags CASCADE"
+    ]
+    return drop_queries
+def create_tables(db_connection):
+    """Create the database tables"""
+    cursor = db_connection.cursor()
+    queries = create_table_queries()
+    for query in queries:
+        cursor.execute(query)
+    db_connection.commit()
+
+def destroy(database_url):
+    """Drop database table entries"""
+    database_url = current_app.config['DATABASE_URL']
+    connection = psycopg2.connect(database_url)
+    cursor = connection.cursor()
+    queries = drop_table_queries()
+    for query in queries:
+        cursor.execute(query)
+    connection.commit()

@@ -1,17 +1,35 @@
-#!/usr/bin/python
-from configparser import ConfigParser
-def config(filename='database.ini', section='postgresql'):
-    # create a parser
-    parser = ConfigParser()
-    # read config file
-    parser.read(filename)
-    # get section, default to postgresql
-    db = {}
-    if parser.has_section(section):
-        params = parser.items(section)
-        for param in params:
-            db[param[0]] = param[1]
-    else:
-        raise Exception('Section {0} not found in the {1} file'.format(section, filename))
-    return db
-    
+'''Application configuration file'''
+import os
+class Config:
+    """Parent configuration class"""
+    DEBUG = False
+    SECRET = os.getenv('SECRET_KEY')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+
+class DevelopmentConfig(Config):
+    """Development environment configurations"""
+    DEBUG = True
+    DATABASE_URL = os.getenv("DATABASE_URL")
+
+class TestingConfig(Config):
+    """Testing environment configurations"""
+    TESTING = True
+    DEBUG = True
+    DATABASE_URL = os.getenv("DATABASE_TEST_URL")
+
+class StagingConfig(Config):
+    """Staging environment configurations"""
+    DEBUG = True
+
+class ProductionConfig(Config):
+    """Production environment configurations"""
+    DEBUG = False
+    TESTING = False
+    DATABASE_URL = os.getenv("DATABASE_URL") # Specify database URL for production deployment
+
+APP_CONFIG = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'staging': StagingConfig,
+    'production': ProductionConfig,
+}
