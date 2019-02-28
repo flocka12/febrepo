@@ -1,10 +1,16 @@
-from flask_restful import Resource, Api
-
-from app.api.v2.getflags_view import Redflags
+from flask_restful import Api
 from flask import Blueprint
 
-version_two = Blueprint('api_v2', __name__, url_prefix='/api/v2')
+from app.api.v2.getflags_view import Redflags
+from app.api.v2.user_view import UserRegistration
 
-api = Api(version_two)
 
-api.add_resource(Redflags, '/Redflags')
+AUTH_BLUEPRINT = Blueprint("auth", __name__, url_prefix='/api/v2/auth')
+API_BLUEPRINT = Blueprint("api", __name__, url_prefix='/api/v2')
+
+AUTH = Api(AUTH_BLUEPRINT)
+API = Api(API_BLUEPRINT)
+
+AUTH.add_resource(UserRegistration, '/signup')
+
+API.add_resource(Redflags, '/Redflags')
