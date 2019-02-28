@@ -1,14 +1,14 @@
 """Definitions for development and testing environment migrations"""
 import os
 import psycopg2
-from flask import current_app
+
 
 from app.api.v2.models.user_model import UserModel
 from db import create_tables, destroy
 
 def migrate(database_url):
     """Create tables and an admin user"""
-    database_url = current_app.config['DATABASE_URL']
+    database_url = os.getenv("DATABASE_URL")
     connection = psycopg2.connect(database_url)
     create_tables(connection)
     query = """INSERT INTO users(

@@ -1,18 +1,18 @@
+import os
 import psycopg2
-
-from flask import current_app
 
 def establish_connection():
     """Establish a database connection"""
-    database_url = current_app.config['DATABASE_URL']
+    database_url = os.getenv("DATABASE_URL")
     try:
         connection = psycopg2.connect(database_url)
     except psycopg2.DatabaseError as error:
         print("error {}".format(error))
-    return connection   
+    return(connection)  
+
 def create_table_queries():
     "SQL Queries to create tables"
-    users = """ CREATE TABLE IF NOT EXIST users(
+    users = """CREATE TABLE IF NOT EXISTS "users"(
         ID SERIAL PRIMARY KEY,
         firstname VARCHAR(50) NOT NULL,
         lastname VARCHAR(50) NOT NULL,
@@ -24,7 +24,7 @@ def create_table_queries():
         is_admin BOOLEAN NOT NULL DEFAULT FALSE,
         password VARCHAR(100) NOT NULL
         )"""
-    redflags = """ CREATE TABLE IF NOT EXIST redflags(
+    redflags = """CREATE TABLE IF NOT EXISTS "redflags"(
         ID SERIAL PRIMARY KEY,
         created_by INT NOT NULL,
         created_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -47,17 +47,19 @@ def drop_table_queries():
         "DROP TABLE IF EXISTS redflags CASCADE"
     ]
     return drop_queries
-def create_tables(db_connection):
+def create_tables(connection):
     """Create the database tables"""
-    cursor = db_connection.cursor()
+    database_url = os.getenv("DATABASE_URL")
+    connection = psycopg2.connect(database_url)
+    cursor = connection.cursor()
     queries = create_table_queries()
     for query in queries:
         cursor.execute(query)
-    db_connection.commit()
+    connection.commit()
 
 def destroy(database_url):
     """Drop database table entries"""
-    database_url = current_app.config['DATABASE_URL']
+    database_url = os.getenv("DATABASE_URL")
     connection = psycopg2.connect(database_url)
     cursor = connection.cursor()
     queries = drop_table_queries()
